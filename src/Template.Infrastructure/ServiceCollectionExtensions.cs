@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
         {
             services.AddSingleton<ITestRepository, TestRepository>();
             services.AddSingleton<IZubiRepository, ZubiRepository>();
+            services.AddSingleton<IZabaRepository, ZabaRepository>();
 
             return services;
         }
