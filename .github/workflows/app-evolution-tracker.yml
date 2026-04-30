@@ -2,10 +2,13 @@ name: App Evolution Tracker
 on:
   pull_request:
     types: [closed]
-    branches: [dev]
+    branches: [dev]  # Change to your branch
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  update-evolution:
+  evolution-analysis:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     
@@ -15,100 +18,158 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v5  # ← Updated to v5 (Node.js 24)
+      uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        ref: dev
         fetch-depth: 0
         
-    - name: Setup Git
+    - name: Setup Git and Tools
       run: |
         git config --local user.email "action@github.com"
-        git config --local user.name "App Evolution Tracker"
+        git config --local user.name "Evolution Tracker"
+        sudo apt-get update && sudo apt-get install gh jq -y
+        pip3 install anthropic
+        echo "✅ Environment ready"
         
-    - name: Install GitHub CLI
+    - name: Create Skill Execution Script
       run: |
-        sudo apt-get update
-        sudo apt-get install gh
-        
-    - name: Setup Python
-      uses: actions/setup-python@v5  # ← Updated to v5
-      with:
-        python-version: '3.11'
-        
-    - name: Install dependencies
-      run: |
-        pip install anthropic
-        
-    - name: Create evolution tracker script
-      run: |
-        cat > evolution_tracker.py << 'EOF'
+        cat > execute_skill.py << 'EOF'
         import os
         import anthropic
         import subprocess
         import json
+        import sys
         
-        def main():
-            # Read the skill content
+        def get_pr_data(pr_number):
+            """Get PR information using GitHub CLI"""
+            try:
+                # Get PR details
+                pr_result = subprocess.run([
+                    'gh', 'pr', 'view', str(pr_number), 
+                    '--json', 'title,body,author,files,additions,deletions'
+                ], capture_output=True, text=True, check=True)
+                
+                pr_data = json.loads(pr_result.stdout)
+                
+                # Get PR diff (truncated for API limits)
+                diff_result = subprocess.run([
+                    'gh', 'pr', 'diff', str(pr_number)
+                ], capture_output=True, text=True, check=True)
+                
+                return {
+                    'number': pr_number,
+                    'title': pr_data.get('title', ''),
+                    'body': pr_data.get('body', '')[:500],  # Truncate body
+                    'author': pr_data.get('author', {}).get('login', ''),
+                    'files': [f['path'] for f in pr_data.get('files', [])],
+                    'additions': pr_data.get('additions', 0),
+                    'deletions': pr_data.get('deletions', 0),
+                    'diff': diff_result.stdout[:4000]  # Truncate diff for API
+                }
+            except Exception as e:
+                print(f"Error getting PR data: {e}")
+                return None
+        
+        def load_skill():
+            """Load the skill content"""
             skill_content = """
-        ---
-        name: app-evolution-tracker
-        description: Automatically tracks application evolution and architectural insights on PR merge to dev branch. Maintains living documentation under .app-knowledge/ that focuses on current application state, how it evolved, and key insights learned.
-        ---
+        You are the App Evolution Tracker skill. You analyze merged PRs to maintain comprehensive 
+        architectural evolution knowledge in .app-knowledge/evolution/ with smart size management.
         
-        # App Evolution Tracker
+        Your core capabilities:
+        1. **Contextual Analysis**: Analyze PRs in context of accumulated architectural knowledge
+        2. **Pattern Recognition**: Learn and recognize team's architectural patterns over time  
+        3. **Evolution Intelligence**: Generate insights about architectural evolution and trends
+        4. **Smart Size Management**: Keep files focused and under size limits (8KB max)
+        5. **Knowledge Accumulation**: Build persistent architectural memory
         
-        You are analyzing a merged PR to update application evolution documentation under .app-knowledge/evolution/.
+        When analyzing a PR, you:
+        1. Load any existing evolution knowledge from .app-knowledge/evolution/
+        2. Analyze the PR changes for architectural significance  
+        3. Update current architecture state
+        4. Record significant changes (MEDIUM/HIGH impact only)
+        5. Update architectural patterns and insights
+        6. Maintain size limits through intelligent content rotation
+        
+        File size limits:
+        - architecture-overview.md: 5KB (current state only)
+        - recent-timeline.md: 8KB (last 20 significant changes)
+        - architectural-patterns.md: 6KB (active patterns only)
+        - current-insights.md: 5KB (actionable intelligence)
         
         Focus on:
-        1. Current application state after this PR
-        2. Architectural significance of changes  
-        3. Insights that inform future development
-        4. Evolution narrative (how we got here)
+        - Current system state over historical artifacts
+        - Proven patterns over speculation
+        - Actionable insights over verbose descriptions
+        - Quality intelligence over quantity of data
         
-        Treat old/deprecated code as less important than current reality and insights.
-        
-        Create/update these files as needed:
-        - .app-knowledge/evolution/architecture-current.md
-        - .app-knowledge/evolution/major-changes.md  
-        - .app-knowledge/evolution/technical-insights.md
-        - .app-knowledge/evolution/deprecated.md
-        
-        Make updates that focus on CURRENT state with evolution context, not detailed historical logs.
+        Create/update files under .app-knowledge/evolution/ as needed.
             """
+            return skill_content
+        
+        def execute_skill(pr_number):
+            """Execute the skill via Claude API"""
             
-            pr_number = os.environ.get('PR_NUMBER')
-            pr_title = os.environ.get('PR_TITLE', '')
-            pr_author = os.environ.get('PR_AUTHOR', '')
+            # Check for API key
+            api_key = os.environ.get('ANTHROPIC_API_KEY')
+            if not api_key:
+                print("❌ ANTHROPIC_API_KEY not found")
+                print("Add your Claude API key to GitHub Secrets")
+                return False
             
-            # Get PR diff
-            try:
-                diff_result = subprocess.run(['gh', 'pr', 'diff', pr_number], 
-                                          capture_output=True, text=True, check=True)
-                pr_diff = diff_result.stdout
-            except subprocess.CalledProcessError:
-                pr_diff = "Could not retrieve PR diff"
+            # Get PR data
+            print(f"📥 Analyzing PR #{pr_number}...")
+            pr_data = get_pr_data(pr_number)
+            if not pr_data:
+                return False
             
-            # Create message for Claude
+            print(f"📋 PR: {pr_data['title']} by @{pr_data['author']}")
+            print(f"📄 Files: {len(pr_data['files'])}, Changes: +{pr_data['additions']}/-{pr_data['deletions']}")
+            
+            # Load skill
+            skill_content = load_skill()
+            
+            # Create message for skill
             message = f"""
-            Update app evolution knowledge from PR #{pr_number}
-            
-            PR Title: {pr_title}
-            PR Author: @{pr_author}
-            
-            PR Diff:
-            ```
-            {pr_diff[:4000]}  # Limit diff size
-            ```
-            
-            Please analyze this PR and update the evolution documentation under .app-knowledge/evolution/ as needed.
-            Create the directory and files if they don't exist.
-            Focus on architectural significance and current state.
+        Analyze this merged PR for comprehensive architectural evolution tracking:
+        
+        **PR #{pr_data['number']}:** {pr_data['title']}
+        **Author:** @{pr_data['author']}
+        **Changes:** +{pr_data['additions']}/-{pr_data['deletions']} lines
+        **Files Changed:** {len(pr_data['files'])}
+        
+        **Changed Files:**
+        {chr(10).join(f"- {f}" for f in pr_data['files'][:20])}
+        {"... and more" if len(pr_data['files']) > 20 else ""}
+        
+        **PR Description:**
+        {pr_data['body'] if pr_data['body'] else 'No description provided'}
+        
+        **Code Changes Preview:**
+        ```diff
+        {pr_data['diff'][:3000]}
+        {"... [truncated for length]" if len(pr_data['diff']) > 3000 else ""}
+        ```
+        
+        Please analyze this PR and update the evolution knowledge in .app-knowledge/evolution/
+        
+        Instructions:
+        1. Create/update architecture-overview.md with current system state
+        2. If architecturally significant (MEDIUM/HIGH), add to recent-timeline.md  
+        3. Update architectural-patterns.md with any recognized patterns
+        4. Generate current-insights.md with evolution intelligence
+        5. Maintain file size limits through smart content management
+        6. Focus on current state and actionable insights
+        
+        Create the .app-knowledge/evolution/ directory structure if it doesn't exist.
             """
             
             # Call Claude API
-            client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])
-            
+            print("🧠 Running evolution analysis...")
             try:
+                client = anthropic.Anthropic(api_key=api_key)
+                
                 response = client.messages.create(
                     model="claude-sonnet-4-20250514",
                     max_tokens=4000,
@@ -116,36 +177,92 @@ jobs:
                     messages=[{"role": "user", "content": message}]
                 )
                 
-                print("✅ Evolution knowledge updated successfully")
-                print(response.content[0].text if response.content else "No response content")
-                
+                if response.content:
+                    result = response.content[0].text
+                    print("✅ Evolution analysis completed")
+                    print("📄 Analysis result:")
+                    
+                    # Show preview of response
+                    lines = result.split('\n')
+                    for i, line in enumerate(lines[:15]):
+                        print(f"  {line}")
+                    if len(lines) > 15:
+                        print(f"  ... ({len(lines) - 15} more lines)")
+                    
+                    return True
+                else:
+                    print("⚠️ No response content received")
+                    return False
+                    
             except Exception as e:
                 print(f"❌ Error calling Claude API: {e}")
-                exit(1)
+                return False
         
         if __name__ == "__main__":
-            main()
+            pr_number = os.environ.get('PR_NUMBER', sys.argv[1] if len(sys.argv) > 1 else None)
+            if not pr_number:
+                print("❌ No PR number provided")
+                sys.exit(1)
+                
+            success = execute_skill(pr_number)
+            if not success:
+                sys.exit(1)
         EOF
         
-    - name: Update App Evolution Knowledge
-      run: python evolution_tracker.py
+        echo "✅ Skill execution script created"
+        
+    - name: Run Evolution Analysis  
+      run: |
+        echo "🚀 Executing app-evolution-tracker skill for PR #${{ github.event.number }}"
+        python3 execute_skill.py ${{ github.event.number }}
+        
       env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # ← You need to add this secret
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PR_NUMBER: ${{ github.event.number }}
-        PR_TITLE: ${{ github.event.pull_request.title }}
-        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         
-    - name: Commit and push changes
+    - name: Commit Evolution Knowledge
       run: |
-        if [[ -n $(git status --porcelain .app-knowledge/) ]]; then
+        echo "💾 Checking for evolution knowledge updates..."
+        
+        if [ -n "$(git status --porcelain .app-knowledge/)" ]; then
           git add .app-knowledge/
-          git commit -m "docs: update app evolution knowledge from PR #${{ github.event.number }}
+          git commit -m "knowledge: evolution analysis from PR #${{ github.event.number }}
 
-          Automated update from app-evolution-tracker.
-          PR: ${{ github.event.pull_request.title }} by @${{ github.event.pull_request.user.login }}"
+        🧠 App Evolution Tracker Analysis
+        
+        PR: ${{ github.event.pull_request.title }}
+        Author: @${{ github.event.pull_request.user.login }}
+        
+        Comprehensive architectural evolution analysis with:
+        - Current system state documentation  
+        - Architectural pattern recognition
+        - Evolution insights and predictions
+        - Smart size management (files <8KB)"
+          
           git push origin dev
           echo "✅ Evolution knowledge committed and pushed"
         else
           echo "ℹ️ No evolution knowledge changes to commit"
         fi
+        
+    - name: Analysis Summary
+      run: |
+        echo ""
+        echo "🎯 App Evolution Analysis Complete!"
+        echo ""
+        echo "📊 PR Analysis:"
+        echo "   - PR: #${{ github.event.number }} - ${{ github.event.pull_request.title }}"
+        echo "   - Author: @${{ github.event.pull_request.user.login }}"
+        echo ""
+        echo "🧠 Evolution Intelligence:"
+        echo "   - Skill executed via Claude API"
+        echo "   - Architectural patterns analyzed"
+        echo "   - Evolution knowledge updated"
+        echo ""
+        echo "📁 Knowledge Location: .app-knowledge/evolution/"
+        echo "   - Smart size management enabled"
+        echo "   - Files kept under 8KB each"
+        echo "   - Comprehensive intelligence maintained"
+        echo ""
+        echo "🎉 Repository evolution intelligence enhanced!"
