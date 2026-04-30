@@ -1,0 +1,27 @@
+name: microservice-pr:dotnet-template
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - 'dev'
+      - 'main'
+    paths:
+      - '**'
+      - '!.version'
+      - '!README.md'
+
+concurrency:
+  group: microservice-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  microservice-pr:
+    uses: optimove-tech/devops-main/.github/workflows/microservice-pr.yaml@main
+    with:
+      project: dotnet-template
+      service: dotnet-template
+      run_tests: true
+      compose_test: true
+      compose_path: docker-compose.integration-tests.yml
+    secrets: inherit

@@ -1,0 +1,21 @@
+name: microservice-promote:dotnet-template
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**'
+      - '!.version'
+      - '!README.md'
+      - '!.github/workflows/**'
+    branches:
+      - main
+
+
+jobs:
+  microservice-promote:
+    uses: optimove-tech/devops-main/.github/workflows/microservice-promote.yaml@main
+    with:
+      cd: true
+      project: dotnet-template
+      service: dotnet-template
+    secrets: inherit

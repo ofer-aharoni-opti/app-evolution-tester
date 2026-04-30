@@ -1,0 +1,10 @@
+version: '1.0'
+
+services:
+  app:
+    build: .
+    container_name: dotnet-template
+    environment:
+      - ASPNETCORE_URLS=http://+:5227
+    ports:
+      - "5227:5227"

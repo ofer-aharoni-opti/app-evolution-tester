@@ -1,0 +1,17 @@
+version: '1.0'
+
+services:
+  template-integration-test:
+    build:
+      context: ./
+      dockerfile: ./tests/Template.IntegrationTests/Dockerfile
+      args:
+        - NUGET_TOKEN=${GIT_ACCESS_TOKEN}
+    network_mode: host
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'

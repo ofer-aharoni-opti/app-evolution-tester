@@ -1,0 +1,27 @@
+ingress:
+  default:
+    hosts:
+      "dotnet-template-eu.optimove.net": /*
+
+gcp_access:
+  project_id: cloudcore-prod-eu
+
+hpa:
+  enabled: "true"
+  minReplicas: 3
+  maxReplicas: 10
+  cpu:
+    targetCPUUtilizationPercentage: 70
+  memory:
+    targetMemoryUtilizationPercentage: 70
+  rps:
+    target: 75
+    maxrateperendpoint: 100
+
+resources:
+  requests:
+    memory: '1Gi'
+    cpu: '500m'
+  limits:
+    memory: '2Gi'
+    cpu: '2'

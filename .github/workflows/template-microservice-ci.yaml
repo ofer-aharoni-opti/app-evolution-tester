@@ -1,0 +1,20 @@
+name: microservice-ci:dotnet-template
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**'
+      - '!.version'
+      - '!README.md'
+      - '!.github/workflows/**'
+    branches:
+      - dev
+
+jobs:
+  microservice-ci:
+    uses: optimove-tech/devops-main/.github/workflows/microservice-ci.yaml@main
+    with:
+      cd: true
+      project: dotnet-template
+      service: dotnet-template
+    secrets: inherit

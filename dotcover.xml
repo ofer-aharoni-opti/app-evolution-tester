@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CoverageParams>
+    <!-- Generate a human-readable report by default (CI can publish it as an artifact). -->
+    <Output>coverage.html</Output>
+    <ReportType>HTML</ReportType>
+
+    <!-- Make coverage signal less noisy. -->
+    <HideAutoProperties>True</HideAutoProperties>
+
+    <!-- Exclude non-production / generated / build output files by path. -->
+    <ExcludeFileMasks>
+        <Mask>**/tests/**</Mask>
+        <Mask>**/bin/**</Mask>
+        <Mask>**/obj/**</Mask>
+
+        <Mask>**/Program.cs</Mask>
+        <Mask>**/Properties/**</Mask>
+
+        <Mask>**/*.g.cs</Mask>
+        <Mask>**/*.generated.cs</Mask>
+        <Mask>**/*.Designer.cs</Mask>
+        <Mask>**/*AssemblyInfo.cs</Mask>
+
+        <Mask>**/Migrations/**</Mask>
+        <Mask>**/Swagger/**</Mask>
+    </ExcludeFileMasks>
+
+    <!-- Keep source discovery stable in CI. -->
+    <SourcesSearchPaths>
+        <Path>src</Path>
+    </SourcesSearchPaths>
+
+    <Filters>
+        <ExcludeFilters>
+            <!-- Exclude test assemblies / host generated module. -->
+            <FilterEntry>
+                <ModuleMask>*UnitTests*</ModuleMask>
+            </FilterEntry>
+            <FilterEntry>
+                <ModuleMask>*IntegrationTests*</ModuleMask>
+            </FilterEntry>
+            <FilterEntry>
+                <ModuleMask>*Testing.Common*</ModuleMask>
+            </FilterEntry>
+            <FilterEntry>
+                <ModuleMask>testhost</ModuleMask>
+            </FilterEntry>
+
+            <!-- Exclude composition root / DI wiring / markers (not valuable to cover). -->
+            <FilterEntry>
+                <ClassMask>Template.WebApi.Program</ClassMask>
+            </FilterEntry>
+            <FilterEntry>
+                <ClassMask>Template.WebApi.ServiceCollectionExtensions</ClassMask>
+                <MethodMask>*</MethodMask>
+            </FilterEntry>
+            <FilterEntry>
+                <ClassMask>Template.Infrastructure.ServiceCollectionExtensions</ClassMask>
+                <MethodMask>*</MethodMask>
+            </FilterEntry>
+            <FilterEntry>
+                <ClassMask>Template.Domain.AssemblyReference</ClassMask>
+                <MethodMask>*</MethodMask>
+            </FilterEntry>
+
+            <!-- Exclude typical "data-only" namespaces (adjust to your preference). -->
+            <FilterEntry>
+                <ClassMask>Template.**.Constants.*</ClassMask>
+            </FilterEntry>
+            <FilterEntry>
+                <ClassMask>Template.**.Enums.*</ClassMask>
+            </FilterEntry>
+            <FilterEntry>
+                <ClassMask>Template.**.Models.*</ClassMask>
+            </FilterEntry>
+        </ExcludeFilters>
+    </Filters>
+</CoverageParams>

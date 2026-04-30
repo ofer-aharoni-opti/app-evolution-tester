@@ -1,0 +1,13 @@
+tests:
+  image: "mcr.microsoft.com/dotnet/sdk:10.0"
+  dotcover: true
+  unit_test_command: "dotnet dotcover test Template.sln --dcXml=dotcover.xml --no-build --filter \"FullyQualifiedName!~IntegrationTests\""
+
+integration_tests:
+  enabled: true
+  docker_compose_file: "docker-compose.integration-tests.yml"
+  service_name: "template-integration-test"
+
+sonarqube:
+  type: dotnet
+  dotnet_exclude_test_projects: true

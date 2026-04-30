@@ -1,0 +1,88 @@
+# Build results
+**/bin/
+**/obj/
+**/[Bb]uild/
+**/[Dd]ebug/
+**/[Rr]elease/
+**/[Dd]ebugPublic/
+**/[Rr]eleases/
+**/x64/
+**/x86/
+**/ARM/
+**/ARM64/
+**/bld/
+**/[Oo]ut/
+
+# Visual Studio / VS Code
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vscode/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Git worktrees (used locally to inspect upstream branches)
+.worktrees/
+
+# DotCover / ReSharper / analyzers
+*.DotSettings.user
+_ReSharper*/
+*.resharper
+*.rsuser
+
+# NuGet
+**/packages/
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Test results / coverage
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage.*.xml
+coverage.*.json
+*.lcov
+
+# ASP.NET / IIS Express
+.vsconfig
+**/.aspnet/
+**/AppPackages/
+**/wwwroot/lib/
+**/wwwroot/dist/
+
+# EF / local DB
+*.mdf
+*.ldf
+*.ndf
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# dotnet tool restore / local tools
+.config/dotnet-tools.json
+
+# Local dotnet CLI home (first-use sentinels etc.)
+.dotnet-cli-home/
+
+# Secrets (common patterns; keep actual secrets out of repo)
+**/secrets.json
+**/appsettings.*.local.json
+**/appsettings.*.Development.json
+
+

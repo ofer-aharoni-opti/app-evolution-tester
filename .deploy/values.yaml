@@ -1,0 +1,29 @@
+ingress:
+  default:
+    enabled: "true"
+    type: "internallb"
+    timeout: "600"
+
+deployment:
+  enabled: "true"
+
+service:
+  enabled: "true"
+  ports:
+    default:
+      internal: 8080
+
+gcp_access:
+  enabled: "true"
+
+secrets:
+  default:
+    enabled: true
+
+healthcheck:
+  path: /healthcheck
+
+datadog:
+  enabled: true
+  apm:
+    advanced_profiling_enabled: true
