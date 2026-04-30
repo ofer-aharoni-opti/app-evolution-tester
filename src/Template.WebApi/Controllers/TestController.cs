@@ -58,4 +58,11 @@ public sealed class TestController(IMediator mediator, IMapper mapper) : Control
         var result = await mediator.Send(new GetTest.Query(value), ct);
         return Ok(result);
     }
+
+    [HttpGet("zibi")]
+    public async Task<ActionResult<GetTest.Response>> GetZibi([FromQuery] string value, CancellationToken ct)
+    {
+        var result = await mediator.Send(new GetTest.Query(value), ct);
+        return Ok(result);
+    }
 }
