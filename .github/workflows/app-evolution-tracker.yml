@@ -2,7 +2,7 @@ name: App Evolution Tracker
 on:
   pull_request:
     types: [closed]
-    branches: [dev]  # Change to your main development branch
+    branches: [dev]
 
 jobs:
   update-evolution:
@@ -15,10 +15,10 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5  # ← Updated to v5 (Node.js 24)
       with:
-        fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
         
     - name: Setup Git
       run: |
@@ -27,32 +27,110 @@ jobs:
         
     - name: Install GitHub CLI
       run: |
-        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-        sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-        sudo apt update
-        sudo apt install gh
+        sudo apt-get update
+        sudo apt-get install gh
+        
+    - name: Setup Python
+      uses: actions/setup-python@v5  # ← Updated to v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        pip install anthropic
+        
+    - name: Create evolution tracker script
+      run: |
+        cat > evolution_tracker.py << 'EOF'
+        import os
+        import anthropic
+        import subprocess
+        import json
+        
+        def main():
+            # Read the skill content
+            skill_content = """
+        ---
+        name: app-evolution-tracker
+        description: Automatically tracks application evolution and architectural insights on PR merge to dev branch. Maintains living documentation under .app-knowledge/ that focuses on current application state, how it evolved, and key insights learned.
+        ---
+        
+        # App Evolution Tracker
+        
+        You are analyzing a merged PR to update application evolution documentation under .app-knowledge/evolution/.
+        
+        Focus on:
+        1. Current application state after this PR
+        2. Architectural significance of changes  
+        3. Insights that inform future development
+        4. Evolution narrative (how we got here)
+        
+        Treat old/deprecated code as less important than current reality and insights.
+        
+        Create/update these files as needed:
+        - .app-knowledge/evolution/architecture-current.md
+        - .app-knowledge/evolution/major-changes.md  
+        - .app-knowledge/evolution/technical-insights.md
+        - .app-knowledge/evolution/deprecated.md
+        
+        Make updates that focus on CURRENT state with evolution context, not detailed historical logs.
+            """
+            
+            pr_number = os.environ.get('PR_NUMBER')
+            pr_title = os.environ.get('PR_TITLE', '')
+            pr_author = os.environ.get('PR_AUTHOR', '')
+            
+            # Get PR diff
+            try:
+                diff_result = subprocess.run(['gh', 'pr', 'diff', pr_number], 
+                                          capture_output=True, text=True, check=True)
+                pr_diff = diff_result.stdout
+            except subprocess.CalledProcessError:
+                pr_diff = "Could not retrieve PR diff"
+            
+            # Create message for Claude
+            message = f"""
+            Update app evolution knowledge from PR #{pr_number}
+            
+            PR Title: {pr_title}
+            PR Author: @{pr_author}
+            
+            PR Diff:
+            ```
+            {pr_diff[:4000]}  # Limit diff size
+            ```
+            
+            Please analyze this PR and update the evolution documentation under .app-knowledge/evolution/ as needed.
+            Create the directory and files if they don't exist.
+            Focus on architectural significance and current state.
+            """
+            
+            # Call Claude API
+            client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])
+            
+            try:
+                response = client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=4000,
+                    system=skill_content,
+                    messages=[{"role": "user", "content": message}]
+                )
+                
+                print("✅ Evolution knowledge updated successfully")
+                print(response.content[0].text if response.content else "No response content")
+                
+            except Exception as e:
+                print(f"❌ Error calling Claude API: {e}")
+                exit(1)
+        
+        if __name__ == "__main__":
+            main()
+        EOF
         
     - name: Update App Evolution Knowledge
-      run: |
-        # Your skill execution command here - adapt based on how you run Claude skills
-        # Example options:
-        
-        # Option 1: If using Claude API directly
-        # python scripts/run-evolution-tracker.py ${{ github.event.number }}
-        
-        # Option 2: If using Claude desktop/CLI
-        # claude --skill app-evolution-tracker "update app knowledge from PR ${{ github.event.number }}"
-        
-        # Option 3: Custom script that calls the skill
-        echo "Updating evolution knowledge for PR #${{ github.event.number }}"
-        echo "PR Title: ${{ github.event.pull_request.title }}"
-        echo "PR Author: ${{ github.event.pull_request.user.login }}"
-        
-        # Placeholder - replace with your actual skill execution
-        echo "Replace this section with your skill execution command"
-        
+      run: python evolution_tracker.py
       env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # ← You need to add this secret
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PR_NUMBER: ${{ github.event.number }}
         PR_TITLE: ${{ github.event.pull_request.title }}
@@ -60,24 +138,14 @@ jobs:
         
     - name: Commit and push changes
       run: |
-        if [[ -n $(git status --porcelain .app-knowledge/evolution/) ]]; then
-          git add .app-knowledge/evolution/
+        if [[ -n $(git status --porcelain .app-knowledge/) ]]; then
+          git add .app-knowledge/
           git commit -m "docs: update app evolution knowledge from PR #${{ github.event.number }}
 
-          Automated update from app-evolution-tracker skill.
+          Automated update from app-evolution-tracker.
           PR: ${{ github.event.pull_request.title }} by @${{ github.event.pull_request.user.login }}"
-          git push
+          git push origin dev
+          echo "✅ Evolution knowledge committed and pushed"
         else
-          echo "No evolution knowledge changes to commit"
+          echo "ℹ️ No evolution knowledge changes to commit"
         fi
-
-    - name: Comment on PR (optional)
-      if: success()
-      run: |
-        gh pr comment ${{ github.event.number }} --body "🧠 **App evolution knowledge updated**
-
-        The application evolution documentation has been automatically updated to reflect changes from this PR.
-        
-        View updated knowledge: [.app-knowledge/evolution/](../tree/dev/.app-knowledge/evolution)"
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
