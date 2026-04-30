@@ -1,269 +1,182 @@
 ---
 name: app-evolution-tracker
-description: Automatically tracks application evolution and architectural insights on PR merge to dev branch. Maintains living documentation under .app-knowledge/ that focuses on current application state, how it evolved, and key insights learned. Triggered by GitHub Actions on dev branch merges. Use when you want to automatically capture significant changes, architectural evolution, and team insights without manual maintenance. Also trigger manually with "update app knowledge", "track this change", "document this evolution", "capture app insights".
+description: Automatically tracks application evolution and architectural insights on PR merge to dev branch. Maintains living documentation under .app-knowledge/evolution/ that focuses on current application state, how it evolved, and key insights learned. Analyzes code diffs to extract architectural significance, detects new components, API changes, database modifications, and technology stack evolution. Provides intelligent filtering (only documents MEDIUM/HIGH significance changes). Creates current-state-focused documentation rather than historical logs. Use when you want meaningful technical evolution tracking across any repository without manual maintenance.
 ---
 
-# App Evolution Tracker
+# App Evolution Tracker - Intelligent Analysis
 
-Automatically maintains living documentation of application evolution, architecture, and insights. Designed to run via GitHub Actions on every PR merge to dev branch, creating and updating files under `.app-knowledge/evolution/` that represent the current state and evolution path of the application.
+I analyze merged PRs to maintain living documentation about your application's architectural evolution. I focus on current system state and meaningful technical insights, not historical logs or generic PR metadata.
 
-## Core Philosophy
+## My Analysis Intelligence
 
-**Current state over historical artifacts.** Focus on what the application looks like NOW and how it evolved to this state, not detailed historical records. Old/changed code, deprecated flows, and outdated architecture are treated as less important than current reality and evolution insights.
+When you provide me with a PR number, I:
 
-**Living documentation.** Files are continuously updated to reflect current reality rather than accumulating historical entries that become noise.
+### 1. **Deep Diff Analysis**
+```python
+# I parse code changes to extract:
+- New files created (by type and purpose)
+- Classes, interfaces, services added  
+- API endpoints and routes introduced
+- Database schemas, migrations, entities
+- Configuration changes and dependencies
+- Test coverage additions
+- Infrastructure modifications
 
-## Trigger Patterns
-
-**Automatic (preferred):**
-- GitHub Action on PR merge to `dev` branch
-- Webhook on dev branch push
-
-**Manual:**
-- "update app knowledge with this PR"
-- "track this architectural change"  
-- "document this evolution"
-- "capture insights from this change"
-- "refresh app knowledge"
-
-## File Structure
-
-Creates/maintains these files under `.app-knowledge/evolution/`:
-
-```
-.app-knowledge/evolution/
-├── architecture-current.md      # Current architecture state
-├── major-changes.md            # Significant evolution events  
-├── technical-insights.md       # Patterns, lessons, discoveries
-├── api-evolution.md           # API changes and current state
-├── data-evolution.md          # Database/data model evolution
-└── deprecated.md              # What was removed/changed and why
+# I detect patterns like:
+- "Added UserController with 5 CRUD endpoints"
+- "Introduced Entity Framework migration for Users table"  
+- "Added circuit breaker pattern to payment service"
+- "Refactored authentication to JWT-based approach"
 ```
 
-## Prerequisites
-
-1. **GitHub CLI authenticated:** `gh auth status`
-2. **Repository context:** Must run from git repo root
-3. **PR context:** Either PR number provided or auto-detected from merge commit
-
-## Workflow
-
-### Phase 1: Gather Context
-
-**1. Extract PR information**
-```bash
-# Auto-detect from recent merge if no PR number given
-RECENT_MERGE=$(git log --oneline --merges -1 --grep="Merge pull request")
-PR_NUMBER=$(echo "$RECENT_MERGE" | grep -o '#[0-9]*' | sed 's/#//')
-
-# Get PR details
-gh pr view $PR_NUMBER --json title,body,author,files,commits
-gh pr diff $PR_NUMBER
+### 2. **Architectural Significance Scoring**
+```python
+def calculate_significance(changes):
+    score = 0
+    factors = []
+    
+    # High impact (5 points each)
+    if changes.new_services: 
+        score += 5
+        factors.append(f"New service: {changes.new_services}")
+    
+    if changes.database_migrations:
+        score += 4  
+        factors.append("Database schema changes")
+        
+    if changes.breaking_api_changes:
+        score += 4
+        factors.append("Breaking API changes detected")
+    
+    # Medium impact (2-3 points each)
+    if changes.new_endpoints:
+        score += 2
+        factors.append(f"{len(changes.new_endpoints)} new API endpoints")
+        
+    if changes.major_refactoring:
+        score += 3
+        factors.append("Major code restructuring")
+    
+    # Classification
+    if score >= 15: return "HIGH", factors
+    elif score >= 8: return "MEDIUM", factors  
+    elif score >= 3: return "LOW", factors
+    else: return "MINIMAL", factors
 ```
 
-**2. Analyze change significance**
-Classify the PR impact:
-- **Architectural:** New services, major refactoring, design pattern changes
-- **API:** New endpoints, breaking changes, contract evolution  
-- **Data:** Schema changes, new entities, data flow modifications
-- **Infrastructure:** Deployment, configuration, environment changes
-- **Feature:** New functionality with architectural implications
-- **Maintenance:** Bug fixes, updates (usually low-priority for evolution tracking)
+**Only MEDIUM and HIGH significance changes get documented.** This prevents noise from routine maintenance, bug fixes, and minor updates.
 
-### Phase 2: Update Living Documentation
-
-**3. Create evolution directory if needed**
-```bash
-mkdir -p .app-knowledge/evolution
-```
-
-**4. Update architecture-current.md**
-**Focus:** What the architecture looks like TODAY after this change.
+### 3. **Technology Stack Detection**
+I automatically identify your current tech stack from file analysis and create documentation like:
 
 ```markdown
-# Current Architecture - Updated {date}
+## Current Technology Stack
+- .NET 8 / C# (Backend API)
+- Entity Framework Core (Data Layer)  
+- SQL Server (Primary Database)
+- React 18 / TypeScript (Frontend)
 
-## System Overview
-{Current high-level architecture - updated based on PR changes}
+## Recent Architectural Changes
+### New Components Added (PR #47)
+- ZubiController: Full CRUD operations (/api/zubi/*)
+- ZubiService: Business logic with validation rules
+- Zubi entity: EF model with audit fields and relationships
 
-## Core Services  
-{List of current services with brief descriptions}
-
-## Data Flow
-{How data moves through the system currently}
-
-## Recent Evolution
-- **{date}:** {Brief description of architectural change from this PR}
-
-## Key Decisions
-{Current architectural decisions that shape the system}
+## Current System Structure
+### API Layer (18 controllers total)
+- Authentication: JWT with refresh tokens
+- User Management: Profile, preferences, roles
+- Product Catalog: Search, filtering, recommendations  
+- Order Processing: Cart, checkout, payment
+- **New: Zubi Management:** CRUD operations with business rules
 ```
 
-**5. Update major-changes.md**
-**Focus:** Significant evolution events that shaped the current application.
-
-Only add entries for architecturally significant changes:
-- New major features that changed system design
-- Performance improvements that required architectural shifts  
-- Breaking changes that affected system contracts
-- Technology migrations or major refactors
-
-```markdown  
-# Major Evolution Events
-
-## {date} - {Change Title}
-**PR:** #{number} by @{author}
-**Impact:** {Brief description of what changed architecturally}  
-**Why:** {Reason for the change}
-**Current State:** {How this affects current architecture}
-
----
-{Previous entries, pruned if no longer relevant to current state}
-```
-
-**6. Update technical-insights.md**
-**Focus:** Patterns, lessons, and discoveries that inform future development.
-
+### 4. **Smart Filtering**
+Instead of logging every PR like this:
 ```markdown
-# Technical Insights
-
-## Current Patterns We Use
-{Patterns that are actively used in current codebase}
-
-## Lessons Learned  
-{Insights from evolution - what worked, what didn't}
-
-## Performance Discoveries
-{Performance insights that guide current development}
-
-## Recent Insights
-- **{date}:** {Insight from this PR that affects future development}
+❌ PR #9 - Add Zubi CRUD - Status: ✅ completed
 ```
 
-**7. Update API/Data evolution files if applicable**
-Similar approach - focus on current state with evolution context.
-
-**8. Update deprecated.md**
-**Focus:** What was removed and why, to prevent re-introduction of discarded approaches.
-
+I create meaningful analysis like this:
 ```markdown
-# Deprecated & Removed
-
-## Recently Deprecated
-- **{date}:** Removed {feature/pattern} because {reason}
-
-## Historical Deprecations  
-{Keep only items that teams might be tempted to re-introduce}
+✅ ## 2026-04-30 - Zubi Management System [MEDIUM]
+**Significance Score:** 12/20
+**Impact:** Complete domain with CRUD operations and business rules
+**Code Analysis:**
+- Files changed: 8 (6 new, 2 modified)
+- New components: ZubiController, ZubiService, Zubi entity
+- API changes: 5 new endpoints (/api/zubi/*)
+- DB changes: 1 migration (Zubi table with audit fields)
+**Current State:** System now supports 4 business domains
 ```
 
-### Phase 3: Intelligent Updates
+## Documentation I Create/Update
 
-**9. Content refresh strategy**
-- **Keep:** Current state, recent insights (last 6 months), active patterns
-- **Summarize:** Older detailed entries that are still relevant  
-- **Remove:** Outdated information that no longer applies to current system
-- **Archive:** Historical details that might be needed later but aren't day-to-day relevant
+### `architecture-current.md`
+**Focus:** What the system looks like NOW after this change
+- Current technology stack and versions
+- Active services and their responsibilities  
+- API surface and integration patterns
+- Data model and relationships
 
-**10. Cross-reference with code**
-Verify that documented architecture still matches codebase:
-- Check that mentioned services/files still exist
-- Validate that described patterns are still in use
-- Update outdated references
+### `major-changes.md`  
+**Focus:** Architecturally significant evolution events only
+- HIGH/MEDIUM impact changes with detailed analysis
+- Code metrics and business rationale
+- Current state after the change
 
-**11. Commit changes**
-```bash
-git add .app-knowledge/evolution/
-git commit -m "docs: update app evolution knowledge from PR #${PR_NUMBER}
+### `technical-insights.md` (when patterns emerge)
+**Focus:** Learnings that inform future development
+- Recurring architectural decisions
+- Technology adoption patterns
+- Team coding conventions
 
-Automated update from app-evolution-tracker skill.
-Changes: ${CHANGE_SUMMARY}"
+## My Quality Filters
 
-git push origin dev
-```
+**I DOCUMENT when changes:**
+- ✅ Add new architectural components (services, controllers, entities)
+- ✅ Modify API contracts or introduce new endpoints
+- ✅ Change database schemas or add migrations
+- ✅ Introduce new technology or frameworks
+- ✅ Represent significant refactoring
 
-## Change Classification Logic
+**I SKIP when changes:**
+- ❌ Fix typos, update comments, or adjust formatting
+- ❌ Bump dependency versions without behavior changes
+- ❌ Add simple bug fixes without architectural impact
+- ❌ Make routine maintenance changes
 
-**High Priority (always update evolution docs):**
-- New services, major refactors, architectural pattern changes
-- API contract changes, new major endpoints
-- Database schema changes, new entities
-- Performance changes that required architectural shifts
-- Security changes that affected system design
+## How to Use Me
 
-**Medium Priority (update if significant):**
-- New features with moderate architectural impact
-- Technology updates that change development patterns
-- Configuration changes that affect system behavior
-
-**Low Priority (usually skip):**
-- Bug fixes without architectural implications
-- Dependency updates without behavior changes
-- Documentation or testing changes only
-- Minor UI/UX changes
-
-## Content Quality Guidelines
-
-**Good evolution entries:**
-- Focus on current state after the change
-- Explain WHY the change was made
-- Connect to overall application evolution story
-- Help future developers understand current architecture
-
-**Avoid:**
-- Detailed historical logs that become noise
-- Technical implementation details that change frequently  
-- Temporary workarounds or experiments
-- Information that doesn't help understand current system
-
-## GitHub Action Integration
-
+**GitHub Actions Integration:**
 ```yaml
-name: Update App Evolution Knowledge
-on:
-  pull_request:
-    types: [closed]
-    branches: [dev]
-
-jobs:
-  update-evolution:
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: Update Evolution Knowledge  
-      run: |
-        claude --skill app-evolution-tracker \
-          "update app knowledge from PR ${{ github.event.number }}"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- name: Update Evolution Knowledge
+  run: python scripts/run-evolution-skill.py ${{ github.event.number }}
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-## Success Metrics
-
-**The evolution documentation succeeds when:**
-- New team members can understand current architecture quickly
-- Architectural decisions are clear and traceable
-- Patterns and lessons are actively referenced during development
-- Documentation stays current without manual maintenance
-
-**It fails when:**
-- Files become stale or contradictory
-- Information is too detailed/historical to be useful
-- Updates create noise rather than insights
-- Evolution story becomes unclear
-
-## Manual Refresh Mode
-
-For occasional cleanup or bootstrap:
-
+**Manual Analysis:**
 ```bash
-claude --skill app-evolution-tracker "full refresh of app knowledge"
+claude --skill app-evolution-tracker "analyze PR 123"
+claude --skill app-evolution-tracker "update evolution knowledge from recent merge"
 ```
 
-This analyzes recent dev branch activity and rebuilds evolution documentation focused on current state.
+**Direct Invocation:**
+Just tell me: "analyze PR [number]" or "update app knowledge from PR [number]" and I'll:
+1. Fetch the PR diff and metadata
+2. Analyze architectural significance 
+3. Create/update evolution documentation
+4. Focus on current state and meaningful insights
 
----
+## Repository Compatibility
 
-This skill maintains **living memory** of application evolution - not a detailed changelog, but a current-state-focused narrative of how the application got to where it is and what insights emerged along the way.
+I work across technology stacks:
+- **Backend:** .NET, Node.js, Python, Java, Go, PHP
+- **Frontend:** React, Vue, Angular, vanilla JS/TS  
+- **Databases:** SQL Server, PostgreSQL, MySQL, MongoDB
+- **Infrastructure:** Docker, Kubernetes, cloud configurations
+
+My analysis adapts to your technology choices while maintaining consistent architectural insight quality across all your repositories.
+
+I'm designed to be your team's architectural memory - capturing not just what changed, but why it matters for your system's evolution.
