@@ -1,138 +1,87 @@
-# App Evolution Tracker - Reusable Skill Package
+# App Evolution Tracker - Installation Guide
 
-**You're absolutely right!** The analysis logic should be in the **skill**, not scattered across workflow files. This package provides a truly reusable evolution tracker that works across any repository.
+## 📁 **File Locations**
 
-## 🎯 **Proper Separation of Concerns**
+**Skill:** `.claude/skills/app-evolution-tracker/SKILL.md`  
+**Data:** `.app-knowledge/evolution/` (in your repository)
 
-```
-app-evolution-tracker/
-├── SKILL.md                    # 🧠 All the intelligence (REUSABLE)
-├── workflows/
-│   └── github-actions.yml     # ⚙️ Simple skill invoker (GENERIC)
-├── scripts/
-│   └── run-evolution-skill.py # 🔧 API integration example
-└── examples/
-    └── integration-examples.md # 📖 Different ways to use the skill
-```
+## 🚀 **Installation Steps**
 
-## 🚀 **How It Works**
-
-**1. The Skill (SKILL.md)** contains all the intelligent analysis:
-- PR diff parsing and architectural pattern extraction
-- Significance scoring (HIGH/MEDIUM/LOW/MINIMAL)
-- Current system state documentation
-- Technology stack detection
-- Evolution insights generation
-
-**2. The Workflow (github-actions.yml)** is just a thin wrapper:
-- Triggers on PR merge
-- Calls the skill with PR context  
-- Commits the results
-- **Same workflow works in any repo**
-
-**3. The Script (run-evolution-skill.py)** handles skill execution:
-- Fetches PR data via GitHub CLI
-- Calls Claude API with skill loaded
-- **Completely reusable across repositories**
-
-## 📦 **Installation Per Repository**
-
-### Option A: Global Skill + Local Workflow
+### 1. Install the Skill
 ```bash
-# Install skill globally (once)
-claude install app-evolution-tracker
+# Create skill directory
+mkdir -p .claude/skills/app-evolution-tracker
 
-# Add workflow to each repo
-cp workflows/github-actions.yml .github/workflows/app-evolution-tracker.yml
+# Copy the SKILL.md file
+cp app-evolution-tracker-SKILL.md .claude/skills/app-evolution-tracker/SKILL.md
 ```
 
-### Option B: Include Skill In Repository
+### 2. Initialize Knowledge Folder in Repository
+```bash  
+# Create knowledge structure in your repo
+mkdir -p .app-knowledge/evolution
+```
+
+### 3. Test the Skill
 ```bash
-# Add skill to repo
-mkdir -p .claude-skills/app-evolution-tracker
-cp SKILL.md .claude-skills/app-evolution-tracker/
-
-# Add workflow and script
-cp workflows/github-actions.yml .github/workflows/
-cp scripts/run-evolution-skill.py scripts/
+cd your-repository/
+claude --skill app-evolution-tracker "analyze PR 123"
 ```
 
-### Option C: API Integration
+## 📋 **Usage Examples**
+
+### When You Merge a PR:
 ```bash
-# Just add the workflow and script
-cp workflows/github-actions.yml .github/workflows/
-cp scripts/run-evolution-skill.py scripts/
-
-# Add GitHub Secret: ANTHROPIC_API_KEY
-# The script will load the skill and call Claude API
+claude --skill app-evolution-tracker "analyze PR 456 for architectural evolution"
+claude --skill app-evolution-tracker "update evolution knowledge from merged PR 789"
 ```
 
-## 🔧 **Configuration**
-
-**Per Repository:**
-1. **Change branch name** in workflow (dev → main, develop, etc.)
-2. **Add API key** to GitHub Secrets if using API integration
-3. **Customize skill focus** if needed (modify SKILL.md)
-
-**That's it!** The skill automatically detects:
-- Technology stack from file extensions
-- Architectural patterns from code structure  
-- Significance based on change analysis
-- Current system state from codebase
-
-## 🎯 **Benefits of This Approach**
-
-### ✅ **Truly Reusable**
-- **Same skill** works across .NET, Node.js, Python, Java projects
-- **Generic workflow** just invokes skill with PR data
-- **No copy-paste** of analysis logic between repos
-
-### ✅ **Maintainable**
-- **Bug fix in skill** → affects all repositories using it
-- **Enhancement to analysis** → all teams benefit
-- **Single source of truth** for evolution logic
-
-### ✅ **Extensible**
-- **Add new language detection** → edit skill only
-- **Improve significance scoring** → edit skill only
-- **Custom repository needs** → modify skill per repo if needed
-
-## 🚀 **Example Output**
-
-**Instead of generic logs:**
-```markdown
-## 2026-04-30 - PR #9
-**Title:** Add Zubi CRUD
-**Status:** ✅ completed
+### Query Evolution Patterns:
+```bash
+claude --skill app-evolution-tracker "what architectural patterns have emerged"  
+claude --skill app-evolution-tracker "how has our technology stack evolved"
+claude --skill app-evolution-tracker "what are the next logical architectural steps"
 ```
 
-**You get meaningful analysis:**
-```markdown
-## 2026-04-30 - User Management System [HIGH]
-**PR:** #47 by @developer  
-**Significance Score:** 16/20
-**Impact:** Complete CRUD system with authentication
-**Code Analysis:**
-- Files changed: 12 (8 new, 4 modified)
-- New components: ZubiController, ZubiService, Zubi model
-- API changes: 5 new endpoints (/users/create, /users/list, etc.)
-- DB changes: 2 migrations (Users, UserRoles tables)
-**Current State:** System now supports user authentication and role management
+### Check System Evolution:
+```bash
+claude --skill app-evolution-tracker "show me our current architecture state"
+claude --skill app-evolution-tracker "what domain growth patterns do you see"
 ```
 
-## 🎪 **Integration Examples**
+## 🧠 **How It Gets Smarter**
 
-See `examples/integration-examples.md` for:
-- GitHub Actions with API key
-- Self-hosted runner with Claude CLI
-- Webhook integration
-- Custom skill runners
-- Multi-repository deployment
+**First use:** Creates initial knowledge structure
+**PRs 1-10:** Learns your basic patterns
+**PRs 11-25:** Recognizes team conventions  
+**PRs 26+:** Provides predictive insights
 
-## 🏆 **This Solves Your Original Problem**
+## 📁 **Knowledge Structure Created**
 
-**Your need:** Reusable skill for multiple repositories
-**Previous issue:** Logic was in workflow files (not portable)
-**This solution:** Smart skill + generic workflow = true reusability
+The skill automatically creates and maintains:
+```
+.app-knowledge/evolution/
+├── current-state/              # Current system documentation
+├── evolution-patterns/         # Learned team patterns
+├── significant-changes/        # Major evolution timeline
+├── insights/                  # Generated intelligence  
+└── memory/                    # Analysis state
+```
 
-Now you can use the same evolution intelligence across all your repositories with minimal setup per repo!
+## ✅ **Benefits**
+
+- ✅ **Comprehensive evolution tracking** like project-coach
+- ✅ **No user interaction required** - just analyze PRs
+- ✅ **Gets smarter over time** - accumulates architectural intelligence
+- ✅ **Contextual insights** - connects changes to evolution patterns
+- ✅ **Team knowledge sharing** - committed knowledge in repository
+
+## 🎯 **Perfect for Teams Who Want**
+
+- Automatic architectural evolution documentation
+- Understanding of how their system evolved over time
+- Recognition of their architectural patterns and conventions
+- Guidance for future architectural decisions
+- Preservation of architectural knowledge and decisions
+
+Your evolution documentation will grow from simple PR logs to comprehensive architectural intelligence that guides future development!
