@@ -1,13 +1,20 @@
-name: App Evolution Tracker  # ← Not "Fixed YAML"
+name: App Evolution Tracker
 on:
   pull_request:
     types: [closed]
     branches: [dev]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Fix Node.js deprecation
+
 jobs:
   update-evolution:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: read
     
     steps:
     - name: Checkout repository
@@ -21,18 +28,199 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "App Evolution Tracker"
+        echo "✅ Git configured"
         
-    - name: Run Evolution Analysis  # ← This calls the actual skill
+    - name: Install GitHub CLI
       run: |
-        # TODO: Replace with your skill execution method
-        python scripts/run-evolution-skill.py ${{ github.event.number }}
+        sudo apt-get update
+        sudo apt-get install gh -y
+        echo "✅ GitHub CLI installed"
+        
+    - name: Analyze PR and Create Evolution Documentation
+      run: |
+        echo "🔍 Analyzing PR #${{ github.event.number }}: ${{ github.event.pull_request.title }}"
+        
+        # Create evolution directory
+        mkdir -p .app-knowledge/evolution
+        
+        # Get PR diff for analysis
+        echo "📄 Getting PR diff..."
+        gh pr diff ${{ github.event.number }} > pr_diff.txt || echo "Could not get diff"
+        
+        # Get changed files
+        gh pr view ${{ github.event.number }} --json files --jq '.files[].path' > changed_files.txt || echo "Could not get files"
+        
+        # Simple analysis based on file changes
+        echo "🧠 Analyzing changes..."
+        
+        # Count changes
+        NEW_FILES=$(gh pr view ${{ github.event.number }} --json files --jq '.files[] | select(.status == "added") | .path' | wc -l)
+        MODIFIED_FILES=$(gh pr view ${{ github.event.number }} --json files --jq '.files[] | select(.status == "modified") | .path' | wc -l) 
+        TOTAL_FILES=$(gh pr view ${{ github.event.number }} --json files --jq '.files | length')
+        
+        # Detect tech stack from file extensions
+        TECH_STACK=""
+        if grep -q "\.cs$\|\.csproj$" changed_files.txt 2>/dev/null; then
+          TECH_STACK="$TECH_STACK- .NET/C#"$'\n'
+        fi
+        if grep -q "\.js$\|\.ts$\|\.jsx$\|\.tsx$" changed_files.txt 2>/dev/null; then
+          TECH_STACK="$TECH_STACK- JavaScript/TypeScript"$'\n'  
+        fi
+        if grep -q "\.py$" changed_files.txt 2>/dev/null; then
+          TECH_STACK="$TECH_STACK- Python"$'\n'
+        fi
+        if grep -q "\.java$" changed_files.txt 2>/dev/null; then
+          TECH_STACK="$TECH_STACK- Java"$'\n'
+        fi
+        if grep -q "\.sql$\|migration" changed_files.txt 2>/dev/null; then
+          TECH_STACK="$TECH_STACK- SQL Database"$'\n'
+        fi
+        
+        # Detect API changes
+        API_CHANGES=""
+        if grep -qi "controller\|endpoint\|route\|api" changed_files.txt pr_diff.txt 2>/dev/null; then
+          API_CHANGES="- API endpoints detected in changes"$'\n'
+        fi
+        
+        # Detect database changes  
+        DB_CHANGES=""
+        if grep -qi "migration\|schema\|database\|entity" changed_files.txt pr_diff.txt 2>/dev/null; then
+          DB_CHANGES="- Database/schema changes detected"$'\n'  
+        fi
+        
+        # Calculate significance score
+        SCORE=0
+        FACTORS=""
+        
+        if [ "$NEW_FILES" -gt 5 ]; then
+          SCORE=$((SCORE + 3))
+          FACTORS="$FACTORS; Multiple new files ($NEW_FILES)"
+        fi
+        
+        if [ "$TOTAL_FILES" -gt 10 ]; then
+          SCORE=$((SCORE + 2)) 
+          FACTORS="$FACTORS; Large change ($TOTAL_FILES files)"
+        fi
+        
+        if [ -n "$API_CHANGES" ]; then
+          SCORE=$((SCORE + 3))
+          FACTORS="$FACTORS; API changes detected"
+        fi
+        
+        if [ -n "$DB_CHANGES" ]; then
+          SCORE=$((SCORE + 4))
+          FACTORS="$FACTORS; Database changes detected"  
+        fi
+        
+        # Classify significance
+        if [ "$SCORE" -ge 8 ]; then
+          SIGNIFICANCE="HIGH"
+        elif [ "$SCORE" -ge 4 ]; then
+          SIGNIFICANCE="MEDIUM"
+        else
+          SIGNIFICANCE="LOW"
+        fi
+        
+        echo "📊 Analysis complete: $SIGNIFICANCE significance (score: $SCORE)"
+        
+        # Create architecture-current.md
+        cat > .app-knowledge/evolution/architecture-current.md << EOF
+        # Current Architecture - Updated $(date '+%Y-%m-%d')
+        
+        ## Recent Update
+        **PR #${{ github.event.number }}:** ${{ github.event.pull_request.title }}
+        **Author:** @${{ github.event.pull_request.user.login }}
+        **Updated:** $(date '+%Y-%m-%d %H:%M:%S UTC')
+        
+        ## Code Analysis Summary
+        **Files Changed:** $TOTAL_FILES
+        - New files: $NEW_FILES
+        - Modified files: $MODIFIED_FILES
+        - Significance: $SIGNIFICANCE (score: $SCORE/20)
+        
+        ## Technology Stack Detected
+        ${TECH_STACK:-"- Analysis in progress"}
+        
+        ## Recent Changes
+        ${API_CHANGES}${DB_CHANGES}
+        **Change Factors:**${FACTORS}
+        
+        ## File Changes This PR
+        $(head -20 changed_files.txt 2>/dev/null | sed 's/^/- /' || echo "- File list unavailable")
+        
+        ## Evolution Context
+        This documentation reflects the current state after PR #${{ github.event.number }}.
+        Analysis based on file changes and diff patterns.
+        
+        **Next Enhancement:** Add Claude API key (ANTHROPIC_API_KEY) for detailed code analysis.
+        EOF
+        
+        # Only create major-changes.md entry for significant changes
+        if [ "$SCORE" -ge 4 ]; then
+          if [ ! -f .app-knowledge/evolution/major-changes.md ]; then
+            echo "# Major Evolution Events" > .app-knowledge/evolution/major-changes.md
+            echo "" >> .app-knowledge/evolution/major-changes.md
+            echo "This file tracks architecturally significant changes (MEDIUM/HIGH impact)." >> .app-knowledge/evolution/major-changes.md
+            echo "" >> .app-knowledge/evolution/major-changes.md
+          fi
+          
+          cat >> .app-knowledge/evolution/major-changes.md << EOF
+        
+        ## $(date '+%Y-%m-%d') - ${{ github.event.pull_request.title }} [$SIGNIFICANCE]
+        **PR:** #${{ github.event.number }} by @${{ github.event.pull_request.user.login }}
+        **Significance Score:** $SCORE/20
+        **Impact:** $SIGNIFICANCE architectural impact detected
+        **Code Analysis:**
+        - Files changed: $TOTAL_FILES ($NEW_FILES new, $MODIFIED_FILES modified)
+        - Change factors:${FACTORS}
+        - Technology: ${TECH_STACK:-"Mixed/Unknown"}
+        **Current State:** Changes integrated into dev branch
+        EOF
+          
+          echo "✅ Added $SIGNIFICANCE significance change to major-changes.md"
+        else
+          echo "ℹ️ PR has LOW significance (score: $SCORE) - not added to major changes"
+        fi
+        
+        # Cleanup
+        rm -f pr_diff.txt changed_files.txt
+        
+        echo "✅ Evolution analysis complete!"
+        
       env:
-        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Commit evolution updates
+    - name: Show analysis results
       run: |
+        echo "📋 Evolution files created/updated:"
+        ls -la .app-knowledge/evolution/ || echo "No evolution directory found"
+        echo ""
+        if [ -f .app-knowledge/evolution/architecture-current.md ]; then
+          echo "📄 Architecture analysis preview:"
+          head -20 .app-knowledge/evolution/architecture-current.md
+        fi
+        
+    - name: Commit and push
+      run: |
+        echo "📤 Committing evolution analysis..."
+        
         if [ -n "$(git status --porcelain .app-knowledge/)" ]; then
           git add .app-knowledge/
-          git commit -m "docs: evolution analysis from PR #${{ github.event.number }}"
+          git commit -m "docs: evolution analysis from PR #${{ github.event.number }}
+
+        🧠 Automated analysis with file change detection
+        
+        PR: ${{ github.event.pull_request.title }}
+        Author: @${{ github.event.pull_request.user.login }}
+        
+        Analysis includes:
+        - File change detection and classification
+        - Technology stack identification
+        - Architectural significance scoring
+        - Smart filtering (only significant changes logged)"
+          
           git push origin dev
+          echo "✅ Evolution analysis committed and pushed"
+        else
+          echo "ℹ️ No changes to commit"
         fi
