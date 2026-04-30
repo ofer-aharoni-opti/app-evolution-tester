@@ -47,4 +47,11 @@ public sealed class TestController(IMediator mediator, IMapper mapper) : Control
         var result = await mediator.Send(command, ct);
         return Ok(mapper.Map<CreateTestResponseV2>(result));
     }
+
+    [HttpGet("error")]
+    public async Task<ActionResult<GetTest.Response>> GetError([FromQuery] string value, CancellationToken ct)
+    {
+        var result = await mediator.Send(new GetTest.Query(value), ct);
+        return Ok(result);
+    }
 }
