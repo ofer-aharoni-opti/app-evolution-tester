@@ -51,6 +51,10 @@ public sealed class TestController(IMediator mediator, IMapper mapper) : Control
     [HttpGet("error")]
     public async Task<ActionResult<GetTest.Response>> GetError([FromQuery] string value, CancellationToken ct)
     {
+        if (DateTime.Now.Second % 2 == 0)
+        {
+            return BadRequest("Simulated error: even second");
+        }
         var result = await mediator.Send(new GetTest.Query(value), ct);
         return Ok(result);
     }
