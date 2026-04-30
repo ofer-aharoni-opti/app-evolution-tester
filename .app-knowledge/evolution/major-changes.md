@@ -16,3 +16,8 @@
 **Title:** TEST 8
 **Author:** @ofer-aharoni-opti
 **Status:** ✅ Evolution documentation updated automatically
+
+## 2026-04-30 - PR #9
+**Title:** Add Zubi CRUD
+**Author:** @ofer-aharoni-opti
+**Status:** ✅ Evolution documentation updated automatically
