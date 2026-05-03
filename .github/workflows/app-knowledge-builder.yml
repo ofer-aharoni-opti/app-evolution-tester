@@ -1,0 +1,46 @@
+name: App Knowledge Builder
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev]
+
+jobs:
+  update-knowledge:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Update .app-knowledge via Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            A pull request was just merged into the `dev` branch.
+
+            Use the `app-knowledge-builder` skill (in `.claude/skills/app-knowledge-builder/`)
+            to update the `.app-knowledge/` folder accordingly. Follow the skill's
+            instructions for bootstrap vs. incremental mode, anti-historical
+            discipline, gap logging, and split-on-overflow.
+
+            PR context:
+              number:  ${{ github.event.pull_request.number }}
+              title:   ${{ github.event.pull_request.title }}
+              author:  @${{ github.event.pull_request.user.login }}
+
+            After the knowledge files are updated, stage `.app-knowledge/`,
+            commit with message
+              "docs(app-knowledge): update from PR #${{ github.event.pull_request.number }}"
+            and push to `dev`. If there are no changes to commit, exit cleanly.
+          claude_args: |
+            --model claude-opus-4-7
+            --max-turns 50
