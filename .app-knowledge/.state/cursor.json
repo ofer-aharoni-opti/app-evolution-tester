@@ -1,0 +1,13 @@
+{
+  "last_processed_pr": 23,
+  "last_run": "2026-05-03T10:30:00Z",
+  "first_run_completed": true,
+  "stats": {
+    "mode": "bootstrap",
+    "prs_processed": 23,
+    "substantive_prs": 3,
+    "trivial_prs": 20,
+    "files_created": 9,
+    "gaps_open": 2
+  }
+}
