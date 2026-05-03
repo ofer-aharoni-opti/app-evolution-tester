@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
-      id-token: write
+      id-token: write   # required for OIDC → Google Cloud
 
     steps:
       - uses: actions/checkout@v4
@@ -34,15 +34,23 @@ jobs:
         run: |
           if [ ! -f .claude/skills/app-knowledge-builder/SKILL.md ]; then
             echo "::error::Skill file not found at .claude/skills/app-knowledge-builder/SKILL.md"
-            echo "Make sure the skill is committed to the repo."
             exit 1
           fi
           echo "✅ Skill found"
 
-      - name: Update .app-knowledge via Claude
-        uses: anthropics/claude-code-action@v1
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Update .app-knowledge via Claude (Vertex AI)
+        uses: anthropics/claude-code-action@v1
+        env:
+          ANTHROPIC_VERTEX_PROJECT_ID: ${{ secrets.ANTHROPIC_VERTEX_PROJECT_ID }}
+          CLOUD_ML_REGION: ${{ secrets.CLOUD_ML_REGION }}
+        with:
+          use_vertex: "true"
           prompt: |
             A pull request was just merged into the `dev` branch.
 
@@ -59,7 +67,7 @@ jobs:
             Write the updated files to disk under `.app-knowledge/`.
             Do NOT run git commands — a later step handles commit and push.
           claude_args: |
-            --model claude-opus-4-7
+            --model claude-opus-4-7@20251015
             --max-turns 50
 
       - name: Show what Claude produced
