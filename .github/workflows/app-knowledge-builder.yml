@@ -5,6 +5,9 @@ on:
     types: [closed]
     branches: [dev]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   update-knowledge:
     if: github.event.pull_request.merged == true
@@ -13,6 +16,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
