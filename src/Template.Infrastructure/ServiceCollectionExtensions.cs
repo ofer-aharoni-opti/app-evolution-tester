@@ -30,6 +30,8 @@ public static class ServiceCollectionExtensions
         private IServiceCollection AddPersistence()
         {
             services.AddSingleton<ITestRepository, TestRepository>();
+            services.AddSingleton<IZubiRepository, ZubiRepository>();
+            services.AddSingleton<IZabaRepository, ZabaRepository>();
 
             return services;
         }

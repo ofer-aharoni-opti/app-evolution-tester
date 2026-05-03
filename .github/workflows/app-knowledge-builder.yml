@@ -1,0 +1,89 @@
+name: App Knowledge Builder
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  update-knowledge:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "App Knowledge Builder"
+
+      - name: Verify skill is present
+        run: |
+          if [ ! -f .claude/skills/app-knowledge-builder/SKILL.md ]; then
+            echo "::error::Skill file not found at .claude/skills/app-knowledge-builder/SKILL.md"
+            echo "Make sure the skill is committed to the repo."
+            exit 1
+          fi
+          echo "✅ Skill found"
+
+      - name: Update .app-knowledge via Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            A pull request was just merged into the `dev` branch.
+
+            Use the `app-knowledge-builder` skill (in `.claude/skills/app-knowledge-builder/SKILL.md`)
+            to update the `.app-knowledge/` folder accordingly. Follow the skill's
+            instructions for bootstrap vs. incremental mode, anti-historical
+            discipline, gap logging, and split-on-overflow.
+
+            PR context:
+              number:  ${{ github.event.pull_request.number }}
+              title:   ${{ github.event.pull_request.title }}
+              author:  @${{ github.event.pull_request.user.login }}
+
+            Write the updated files to disk under `.app-knowledge/`.
+            Do NOT run git commands — a later step handles commit and push.
+          claude_args: |
+            --model claude-opus-4-7
+            --max-turns 50
+
+      - name: Show what Claude produced
+        run: |
+          echo "=== Contents of .app-knowledge/ ==="
+          if [ -d .app-knowledge ]; then
+            ls -la .app-knowledge/
+            echo ""
+            echo "=== INDEX.md preview ==="
+            head -30 .app-knowledge/INDEX.md 2>/dev/null || echo "(no INDEX.md yet)"
+          else
+            echo "❌ .app-knowledge/ folder does not exist — Claude did not write files"
+          fi
+          echo ""
+          echo "=== git status ==="
+          git status --short
+
+      - name: Commit and push
+        run: |
+          if [ -z "$(git status --porcelain .app-knowledge/)" ]; then
+            echo "ℹ️ No .app-knowledge changes to commit"
+            exit 0
+          fi
+          git add .app-knowledge/
+          git commit -m "docs(app-knowledge): update from PR #${{ github.event.pull_request.number }}"
+          git push origin dev
+          echo "✅ Pushed to dev"

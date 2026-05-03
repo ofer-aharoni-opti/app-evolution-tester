@@ -51,6 +51,17 @@ public sealed class TestController(IMediator mediator, IMapper mapper) : Control
     [HttpGet("error")]
     public async Task<ActionResult<GetTest.Response>> GetError([FromQuery] string value, CancellationToken ct)
     {
+        if (DateTime.Now.Second % 51 == 0)
+        {
+            return BadRequest("Simulated error: even second");
+        }
+        var result = await mediator.Send(new GetTest.Query(value), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("zibi")]
+    public async Task<ActionResult<GetTest.Response>> GetZibi([FromQuery] string value, CancellationToken ct)
+    {
         var result = await mediator.Send(new GetTest.Query(value), ct);
         return Ok(result);
     }
