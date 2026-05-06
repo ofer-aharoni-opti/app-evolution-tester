@@ -2,15 +2,10 @@
 name: app-knowledge-builder
 description: Builds and maintains a living, structured knowledge base of an application — architecture, business logic, flows, conventions, hot paths, and weak points — under `.app-knowledge/` at the repo root, for AI agents working on the app. Use this skill whenever the user says "build app knowledge", "update app knowledge", "refresh app understanding", "onboard me to this app", "what does this app do", "explain the architecture", "what should I know before changing X", or after merging PRs. Also trigger whenever an AI agent is about to work on an unfamiliar codebase and needs to load context — read `.app-knowledge/INDEX.md` first if it exists. On first run (when `INDEX.md` is absent) ingests the full GitHub PR history; on subsequent runs processes only PRs merged since the last cursor. The knowledge base is a living snapshot of the current app, not a history book.
 ---
-
+ 
 # App Knowledge Builder
-
+ 
 Builds and maintains a living mental model of an application under `.app-knowledge/` at the repo root. The data is consumed by AI agents (and humans) who need to understand the app before changing it.
-
-This skill is **complementary to `app-evolution-tracker`**. That skill answers *"how did we get here?"* (history, evolution narrative). This skill answers *"what is the app right now, and what matters?"* (current state, current rules). The two coexist under `.app-knowledge/`:
-
-- `app-evolution-tracker` writes to `.app-knowledge/evolution/`
-- `app-knowledge-builder` (this skill) writes everywhere else under `.app-knowledge/`
 
 ## Core principles
 
