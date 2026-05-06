@@ -1,6 +1,6 @@
 # App Knowledge — dotnet-template
 
-Opinionated **.NET 10 Web API template** (repo: `ofer-aharoni-opti/app-evolution-tester`) implementing Clean Architecture + CQRS with MediatR. Currently exposes four REST resources — **Test** (echo/process), **Zubi** (full CRUD), **Zaba** (full CRUD), and **Zibi** (full CRUD) — backed by in-memory stores. Multi-tenancy is enforced via `x-tenant-id` header on all endpoints except health/swagger. The repo doubles as a test harness for the `app-knowledge-builder` CI skill.
+Opinionated **.NET 10 Web API template** (repo: `ofer-aharoni-opti/app-evolution-tester`) implementing Clean Architecture + CQRS with MediatR. Currently exposes eight REST resources — **Test** (echo/process), **Zubi**, **Zaba**, **Zibi**, **Arogola**, **Banana**, **Somo**, and **Sumo** (all full CRUD) — backed by in-memory stores. Multi-tenancy is enforced via `x-tenant-id` header on all endpoints except health/swagger. The repo doubles as a test harness for the `app-knowledge-builder` CI skill.
 
 ## Routing table
 

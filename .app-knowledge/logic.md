@@ -28,6 +28,15 @@
 - `Hydrate(id, name, description, createdAt, updatedAt)` factory: reconstructs from persisted state — for repository use only, never call from handlers
 - `UpdateDetails(name, description)` sets `UpdatedAt = DateTime.UtcNow`; `UpdatedAt` is null until first update
 
+### ArogolaModel / BananaModel / SumoModel (`src/Template.Domain/Models/`)
+- Identical structure and invariants to `ZubiModel`: `Id` (Guid), `Name` (required, trimmed), `Description` (optional, defaults to empty), `CreatedAt`, `UpdatedAt`
+- Same `Create` / `Hydrate` / `UpdateDetails` factory pattern; `Hydrate` is for repository use only
+- Separate entities for separate REST resources (`/arogola`, `/banana`, `/sumo`)
+
+### SomoModel (`src/Template.Domain/Models/SomoModel.cs`)
+- Identical structure and invariants to the other CRUD entities above
+- Separate REST resource (`/somo`)
+
 ### TenantContext (`src/Template.Domain/Models/TenantContext.cs`)
 - Value object: `TenantId` (int) + optional `UserName` (string?)
 - Carried in scoped `ITenantApplicationContext` through the request pipeline
@@ -41,7 +50,7 @@
 - Tenant context is scoped to the request; populated by `TenantContextMiddleware`
 - Outbound HTTP calls via any registered `HttpClient` automatically carry `x-tenant-id` and `x-user-name` via `TenantContextHandler` DelegatingHandler
 
-## CRUD semantics (Zubi / Zaba / Zibi)
+## CRUD semantics (Zubi / Zaba / Zibi / Arogola / Banana / Somo / Sumo)
 - GET by id: returns 404 when not found (handler returns null → controller translates)
 - POST: creates new resource, returns 201 with `Location` header pointing to the new resource
 - PUT: updates existing; returns 404 if id not found; `UpdatedAt` always set on success

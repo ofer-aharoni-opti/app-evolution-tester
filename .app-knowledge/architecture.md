@@ -24,8 +24,8 @@ Dependency rule: outer layers reference inner layers only. Domain has **no proje
 
 | Project | Layer | Key responsibility |
 |---|---|---|
-| `Template.Domain` | Domain | `TestModel`, `ZubiModel`, `ZabaModel`, `ZibiModel`, `TenantContext` |
-| `Template.Application` | Application | Feature handlers, port interfaces (`ITestRepository`, `IZubiRepository`, `IZabaRepository`, `IZibiRepository`, `ITenantApplicationContext`) |
+| `Template.Domain` | Domain | `TestModel`, `ZubiModel`, `ZabaModel`, `ZibiModel`, `ArogolaModel`, `BananaModel`, `SomoModel`, `SumoModel`, `TenantContext` |
+| `Template.Application` | Application | Feature handlers, port interfaces (`ITestRepository`, `IZubiRepository`, `IZabaRepository`, `IZibiRepository`, `IArogolaRepository`, `IBananaRepository`, `ISomoRepository`, `ISumoRepository`, `ITenantApplicationContext`) |
 | `Template.Infrastructure` | Infrastructure | In-memory repositories (`ConcurrentDictionary`), `TenantApplicationContext`, `TenantContextHandler` (DelegatingHandler) |
 | `Template.WebApi` | Host | Controllers, Middlewares, Swagger config, composition root (`Program.cs`) |
 
@@ -51,7 +51,7 @@ All repositories are **in-memory** (`ConcurrentDictionary`). No database. Regist
 - CI/CD: `.github/workflows/template-microservice-ci.yaml`, `template-microservice-pr.yaml`, `template-microservice-promote.yaml`
 
 ## API versioning
-URL segment: `/api/v{version}/[controller]`. Default: 1.0. Currently `TestController` exposes v1 and v2; `ZubiController`, `ZabaController`, and `ZibiController` are v1 only.
+URL segment: `/api/v{version}/[controller]`. Default: 1.0. Currently `TestController` exposes v1 and v2; all CRUD controllers (`ZubiController`, `ZabaController`, `ZibiController`, `ArogolaController`, `BananaController`, `SomoController`, `SumoController`) are v1 only.
 
 ## Middleware pipeline order
 ```

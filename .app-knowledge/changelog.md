@@ -19,3 +19,4 @@
 [2026-05-06 PR#30–PR#31] Fixed push command in app-knowledge-builder workflow (sets remote URL with GITHUB_TOKEN before push).
 [2026-05-06 PR#32] Adjusted simulated error trigger in `TestController.GetError`: modulo divisor changed from 46 to 45.
 [2026-05-06 PR#33] Added Zibi CRUD: `ZibiModel`, `IZibiRepository`, `ZibiRepository`, full CQRS feature set (CreateZibi, GetZibi, ListZibis, UpdateZibi, DeleteZibi), `ZibiController`, Mapster configs.
+[2026-05-06 PR#34] Added four CRUD entities following the standard pattern: Arogola, Banana, Somo, Sumo — each with Domain model, Application CQRS handlers, Infrastructure repository, and WebApi controller/contracts.
