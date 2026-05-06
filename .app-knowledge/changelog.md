@@ -18,3 +18,4 @@
 [2026-05-06 PR#29] Changed model in `app-knowledge-builder.yml` workflow (model selection update).
 [2026-05-06 PR#30–PR#31] Fixed push command in app-knowledge-builder workflow (sets remote URL with GITHUB_TOKEN before push).
 [2026-05-06 PR#32] Adjusted simulated error trigger in `TestController.GetError`: modulo divisor changed from 46 to 45.
+[2026-05-06 PR#33] Added Zibi CRUD: `ZibiModel`, `IZibiRepository`, `ZibiRepository`, full CQRS feature set (CreateZibi, GetZibi, ListZibis, UpdateZibi, DeleteZibi), `ZibiController`, Mapster configs.

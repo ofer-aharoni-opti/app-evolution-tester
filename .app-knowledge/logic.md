@@ -20,6 +20,14 @@
 - Identical structure and invariants to `ZubiModel` (same factory pattern, same validation)
 - Separate entity for separate CRUD resource (`/zaba` vs `/zubi`)
 
+### ZibiModel (`src/Template.Domain/Models/ZibiModel.cs`)
+- Has `Id` (Guid), `Name` (string), `Description` (string), `CreatedAt` (DateTime), `UpdatedAt` (DateTime?)
+- **Name is required**: `SetDetails` throws `ArgumentException` if name is null/whitespace
+- Name is always trimmed; Description defaults to empty string if null
+- `Create(name, description)` factory: generates new `Guid`, stamps `CreatedAt = DateTime.UtcNow`
+- `Hydrate(id, name, description, createdAt, updatedAt)` factory: reconstructs from persisted state — for repository use only, never call from handlers
+- `UpdateDetails(name, description)` sets `UpdatedAt = DateTime.UtcNow`; `UpdatedAt` is null until first update
+
 ### TenantContext (`src/Template.Domain/Models/TenantContext.cs`)
 - Value object: `TenantId` (int) + optional `UserName` (string?)
 - Carried in scoped `ITenantApplicationContext` through the request pipeline
@@ -33,7 +41,7 @@
 - Tenant context is scoped to the request; populated by `TenantContextMiddleware`
 - Outbound HTTP calls via any registered `HttpClient` automatically carry `x-tenant-id` and `x-user-name` via `TenantContextHandler` DelegatingHandler
 
-## CRUD semantics (Zubi / Zaba)
+## CRUD semantics (Zubi / Zaba / Zibi)
 - GET by id: returns 404 when not found (handler returns null → controller translates)
 - POST: creates new resource, returns 201 with `Location` header pointing to the new resource
 - PUT: updates existing; returns 404 if id not found; `UpdatedAt` always set on success
