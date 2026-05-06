@@ -92,6 +92,8 @@ jobs:
           ls -la .app-knowledge/ 2>/dev/null || echo "(folder missing)"
 
       - name: Commit and push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -z "$(git status --porcelain .app-knowledge/)" ]; then
             echo "ℹ️ No .app-knowledge changes to commit"
@@ -103,5 +105,7 @@ jobs:
           else
             git commit -m "docs(app-knowledge): update from PR #${{ github.event.pull_request.number }}"
           fi
-          git push origin dev
+          # Re-set remote with token so push has credentials (Claude action can clear them)
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          git push origin HEAD:dev
           echo "✅ Pushed to dev"
