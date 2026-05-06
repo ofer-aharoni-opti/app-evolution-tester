@@ -24,7 +24,7 @@ The inward-only dependency rule is a hard invariant. Domain must never reference
 - The Mapster config explicitly maps `src.UpdatedAt!.Value` — this is safe only because `UpdateDetails` always sets `UpdatedAt` before `UpdateAsync` is called. Never call `UpdateAsync` on a model without first calling `UpdateDetails`.
 
 ## Simulated error endpoint
-- `GET /api/v1/test/error` returns 400 when `DateTime.Now.Second % 46 == 0`. This is intentional for testing the evolution tracker — do not remove as a "dead code" cleanup unless confirmed.
+- `GET /api/v1/test/error` returns 400 when `DateTime.Now.Second % 45 == 0`. This is intentional for testing the evolution tracker — do not remove as a "dead code" cleanup unless confirmed.
 
 ## `OptiLogger` dependency
 - `Program.cs` uses `Optimove.Infrastructure.Logger.OptiLogger.Init(...)`. This is an Optimove-internal package. Removing or changing logging setup without access to that package will break the build.

@@ -42,5 +42,5 @@
 ## Test feature
 - `GetTest` echoes the provided `value` (fallback: creates a new model if not in store)
 - `CreateTest` marks the model as processed and stores it; Application response differs from API contract
-- `GET /api/v1/test/error` simulates random failures (returns 400 when `DateTime.Now.Second % 46 == 0`)
+- `GET /api/v1/test/error` simulates random failures (returns 400 when `DateTime.Now.Second % 45 == 0`)
 - `GET /api/v1/test/zibi` is an alias for the standard GET — echoes value
