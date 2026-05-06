@@ -35,6 +35,8 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IZibiRepository, ZibiRepository>();
             services.AddSingleton<ISomoRepository, SomoRepository>();
             services.AddSingleton<ISumoRepository, SumoRepository>();
+            services.AddSingleton<IArogolaRepository, ArogolaRepository>();
+            services.AddSingleton<IBananaRepository, BananaRepository>();
 
             return services;
         }
